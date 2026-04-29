@@ -1,0 +1,39 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        register-enabled: false
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+    config:
+      import-check:
+        enabled: false
+    service-registry:
+      auto-registration:
+        enabled: false
+    discovery:
+      enabled: false
+  config:
+    import: []
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: never
+
+eureka:
+  client:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

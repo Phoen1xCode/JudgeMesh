@@ -1,0 +1,5 @@
+bin/
+/worker
+*.test
+*.out
+coverage.txt

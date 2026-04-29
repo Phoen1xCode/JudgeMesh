@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  config:
+    import:
+      - optional:nacos:gateway.yaml
+      - optional:nacos:application.yaml
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:judgemesh}
+      config:
+        namespace: ${NACOS_NAMESPACE:judgemesh}
+        file-extension: yaml
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+        - id: problem-service
+          uri: lb://problem-service
+          predicates:
+            - Path=/api/problems/**
+        - id: submit-service
+          uri: lb://submit-service
+          predicates:
+            - Path=/api/submits/**, /api/contests/**, /ws/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,gateway
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

@@ -23,7 +23,7 @@
 | 09  | [课程主题映射](./09-课程主题映射.md) | 8 讲 PPT 知识点 → 项目落地点             | **答辩素材**         |
 | 10  | [测试策略](./10-测试策略.md)         | 单元/集成/压测/混沌                      | **第 12 周运行测试** |
 | 11  | [四周排期](./11-四周排期.md)         | Week 1-4 里程碑 + 检查点对齐             | 项目管理             |
-| 12  | [五人分工](./12-五人分工.md)         | A 组长 + B-E 后端均分                    | 项目管理             |
+| 12  | [五人分工](./12-五人分工.md)         | @Phoen1xCode 组长 + @HashThiin-@sigufh 后端均分                    | 项目管理             |
 
 ## 阅读顺序建议
 
@@ -46,16 +46,16 @@
 
 ## 团队 5 人分工(摘要)
 
-> **A 是团队 Go 主力**,所以 judge-worker(Go)归 A;A 也写 Java(网关、共享 API)。
-> A 完整承担前端(28h);后端 5 人尽量均分(每人 ~50h,std ~6h)。
+> **@Phoen1xCode 是团队 Go 主力**,所以 judge-worker(Go)归 @Phoen1xCode;@Phoen1xCode 也写 Java(网关、共享 API)。
+> @Phoen1xCode 完整承担前端(28h);后端 5 人尽量均分(每人 ~50h,std ~6h)。
 
 | 角色         | 主要职责                                                                                | 后端工时 | 总工时          |
 | ------------ | --------------------------------------------------------------------------------------- | -------- | --------------- |
-| **A · 组长** | 前端全套 + **judge-worker(Go + isolate + 4 语言)** + API 网关(Java) + 共享 API 模块     | ~41h     | ~69h(含前端 28) |
-| **B**        | user-service + Seata 客户端 + Seata Server 部署 + DB 迁移协调 + MySQL 部署              | ~51h     | ~51h            |
-| **C**        | problem-service + MinIO 部署 + 缓存策略 + 题目导入工具 + 50 道 demo 题                  | ~46h     | ~46h            |
-| **D**        | submit-service + 比赛模块 + Redis ZSet 排行 + WebSocket + judge-dispatcher(etcd 选主)   | ~57h     | ~57h            |
-| **E**        | CI/CD + K8s 集群 + Nacos + 中间件部署 + 可观测性栈 + 4 个 Grafana 大盘 + ChaosMesh 混沌 | ~54h     | ~54h            |
+| **@Phoen1xCode · 组长** | 前端全套 + **judge-worker(Go + isolate + 4 语言)** + API 网关(Java) + 共享 API 模块     | ~41h     | ~69h(含前端 28) |
+| **@HashThiin**        | user-service + Seata 客户端 + Seata Server 部署 + DB 迁移协调 + MySQL 部署              | ~51h     | ~51h            |
+| **@KY-raika**        | problem-service + MinIO 部署 + 缓存策略 + 题目导入工具 + 50 道 demo 题                  | ~46h     | ~46h            |
+| **@Nier291**        | submit-service + 比赛模块 + Redis ZSet 排行 + WebSocket + judge-dispatcher(etcd 选主)   | ~57h     | ~57h            |
+| **@sigufh**        | CI/CD + K8s 集群 + Nacos + 中间件部署 + 可观测性栈 + 4 个 Grafana 大盘 + ChaosMesh 混沌 | ~54h     | ~54h            |
 
 详见 [12-五人分工](./12-五人分工.md)。
 
@@ -63,16 +63,16 @@
 
 ```
 judgemesh/
-├── frontend/              # React + Vite(A 负责)
+├── frontend/              # React + Vite(@Phoen1xCode 负责)
 ├── services/
-│   ├── api/               # 共享 DTO / Feign / MQ schema(A 维护)
-│   ├── gateway/           # Spring Cloud Gateway(A · Java)
-│   ├── user-service/      # B
-│   ├── problem-service/   # C
-│   ├── submit-service/    # D(含比赛+WebSocket)
-│   ├── judge-dispatcher/  # D(etcd 选主)
-│   └── judge-worker/      # A(Go + isolate)
-├── infra/                 # 全部 E 负责
+│   ├── api/               # 共享 DTO / Feign / MQ schema(@Phoen1xCode 维护)
+│   ├── gateway/           # Spring Cloud Gateway(@Phoen1xCode · Java)
+│   ├── user-service/      # @HashThiin
+│   ├── problem-service/   # @KY-raika
+│   ├── submit-service/    # @Nier291(含比赛+WebSocket)
+│   ├── judge-dispatcher/  # @Nier291(etcd 选主)
+│   └── judge-worker/      # @Phoen1xCode(Go + isolate)
+├── infra/                 # 全部 @sigufh 负责
 │   ├── k8s/               # K8s manifests
 │   ├── helm/              # Helm values
 │   ├── grafana/           # 大盘 JSON

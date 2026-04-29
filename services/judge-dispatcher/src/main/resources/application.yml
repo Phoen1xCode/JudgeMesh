@@ -1,0 +1,53 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: judge-dispatcher
+  config:
+    import:
+      - optional:nacos:judge-dispatcher.yaml
+      - optional:nacos:application.yaml
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:judgemesh}
+      config:
+        namespace: ${NACOS_NAMESPACE:judgemesh}
+        file-extension: yaml
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        prefetch: 1
+        retry:
+          enabled: true
+          max-attempts: 3
+
+judgemesh:
+  etcd:
+    endpoints: ${ETCD_ENDPOINTS:http://127.0.0.1:2379}
+    leader-key: /judgemesh/dispatcher/leader
+    lease-ttl-seconds: 10
+  worker:
+    timeout-seconds: 30
+    max-retry: 3
+  mq:
+    submit-queue: submit.queue
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

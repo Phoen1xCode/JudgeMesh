@@ -1,0 +1,17 @@
+# 实验 1:随机杀 1 个 judge-worker 看自愈
+# 应用:kubectl apply -f infra/chaos/kill-worker.yaml
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-worker
+  namespace: chaos-mesh
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces: [judgemesh]
+    labelSelectors:
+      app: judge-worker
+  duration: "30s"
+  scheduler:
+    cron: "@every 5m"
