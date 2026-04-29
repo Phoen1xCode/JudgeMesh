@@ -20,7 +20,7 @@
 
         <!-- 见 docs/design/02-总体架构.md §4.0 -->
         <spring-boot.version>3.5.0</spring-boot.version>
-        <spring-cloud.version>2025.0.0</spring-cloud.version>
+        <spring-cloud.version>2025.1.1</spring-cloud.version>
         <spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
 
         <!-- 业务依赖(SCA BOM 没管的) -->
