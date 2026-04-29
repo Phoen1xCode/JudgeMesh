@@ -1,33 +1,40 @@
 # JudgeMesh — 代码所有权(对齐 docs/design/12-五人分工.md)
 #
-# ⚠️ 把下面的 @A @B @C @D @E 替换成实际 GitHub 账号(组长在仓库 settings 里给每位同学开权限后)。
-# 写错或留默认会导致 PR 自动 review 指派失败。
+# A=@Phoen1xCode  B=@HashThiin  C=@KY-raika  D=@Nier291  E=@sigufh
+#
+# CODEOWNERS 在 PR 触及对应路径时自动指派 reviewer。
+# 改这份文件需要 @Phoen1xCode 审批。
 
-# ── 组长 A ───────────────────────────────────────────────────────
-/frontend/                  @A
-/services/api/              @A
-/services/gateway/          @A
-/services/judge-worker/     @A
-/tests/security/            @A
-/.github/CODEOWNERS         @A
-/pom.xml                    @A
-/README.md                  @A
-/CONTRIBUTING.md            @A
+# ── A · 组长(@Phoen1xCode) ─────────────────────────────────────
 
-# ── B:用户与分布式事务 ──────────────────────────────────────────
-/services/user-service/     @B
-/migrations/users_db/       @B
+/frontend/ @Phoen1xCode
+/services/api/ @Phoen1xCode
+/services/gateway/ @Phoen1xCode
+/services/judge-worker/ @Phoen1xCode
+/tests/security/ @Phoen1xCode
+/.github/CODEOWNERS @Phoen1xCode
+/pom.xml @Phoen1xCode
+/README.md @Phoen1xCode
+/CONTRIBUTING.md @Phoen1xCode
 
-# ── C:题目与对象存储 ────────────────────────────────────────────
-/services/problem-service/  @C
-/migrations/problems_db/    @C
+# ── B · 用户与分布式事务(@HashThiin) ──────────────────────────
 
-# ── D:提交、比赛、调度 ──────────────────────────────────────────
-/services/submit-service/       @D
-/services/judge-dispatcher/     @D
-/migrations/submits_db/         @D
+/services/user-service/ @HashThiin
+/migrations/users_db/ @HashThiin
 
-# ── E:基础设施与可观测 ──────────────────────────────────────────
-/infra/                     @E
-/.github/workflows/         @E
-/scripts/                   @E
+# ── C · 题目与对象存储(@KY-raika) ─────────────────────────────
+
+/services/problem-service/ @KY-raika
+/migrations/problems_db/ @KY-raika
+
+# ── D · 提交 / 比赛 / 调度(@Nier291) ──────────────────────────
+
+/services/submit-service/ @Nier291
+/services/judge-dispatcher/ @Nier291
+/migrations/submits_db/ @Nier291
+
+# ── E · 基础设施与可观测(@sigufh) ─────────────────────────────
+
+/infra/ @sigufh
+/.github/workflows/ @sigufh
+/scripts/ @sigufh

@@ -1,4 +1,4 @@
-# data/demo-problems/ — 演示题库(C 维护)
+# data/demo-problems/ — 演示题库(@KY-raika 维护)
 
 50+ 道题目,覆盖:
 

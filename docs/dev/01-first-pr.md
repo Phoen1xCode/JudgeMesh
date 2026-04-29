@@ -9,7 +9,7 @@
 - **Go judge-worker 单独成岛**:Go 1.22、stdlib only、`cmd/server/judge/config` 分层,与 Java 侧通过 `JudgeTask` / `JudgeResult` MQ 消息解耦,后续接 isolate 沙箱时不会污染 JVM 进程。
 - **K8s + Helm + Chaos 一次到位**:`infra/k8s/{base,overlays}` 用 kustomize 双层结构,`submit-service` 与 `judge-worker` 给出 HPA 完整样板;`infra/helm/values` 为 Prometheus / Loki / SkyWalking / Chaos-Mesh 准备占位;`infra/chaos` 三份故障注入 YAML 直接可跑。
 - **CI 路径过滤**:`ci-java` / `ci-go` / `ci-frontend` 三工作流各自只在相关路径变更时触发,避免改前端等十几分钟 Maven。
-- **首次定义共享消息契约**:`services/api/.../message/JudgeTask.java`、`JudgeResult.java` 是 A(submit/dispatcher)与 D(judge-worker)之间的合同,需要 Day 2 之前双方对齐字段。
+- **首次定义共享消息契约**:`services/api/.../message/JudgeTask.java`、`JudgeResult.java` 是 @Phoen1xCode(judge-worker)与 @Nier291(submit-service / judge-dispatcher)之间的合同,需要 Day 2 之前双方对齐字段。
 
 ## 变更摘要
 
@@ -21,7 +21,7 @@
   - `dto/`:`UserDTO.java`、`ProblemDTO.java`、`SubmitDTO.java`
   - `client/`:`UserClient.java`、`ProblemClient.java`(OpenFeign 接口)
   - `error/`:`ApiResponse.java`、`ErrorCode.java`
-  - `message/`:`JudgeTask.java`、`JudgeResult.java`(MQ schema,**A↔D 共享合同**)
+  - `message/`:`JudgeTask.java`、`JudgeResult.java`(MQ schema,**@Phoen1xCode↔@Nier291 共享合同**)
 - **gateway**:`pom.xml`、`GatewayApplication.java`、`application.yml`(SC2025 新坐标 `spring-cloud-starter-gateway-server-webflux`)
 - **user-service**:`pom.xml`、`UserApplication.java`、`application.yml`、`db/migration/V1__init.sql`(users_db)
 - **problem-service**:同上结构,Flyway 指向 problems_db
@@ -90,7 +90,7 @@ CI 工作流首次跑会在推到远端后自动验证(目前仓库无 git remot
 
 1. **isolate 沙箱集成**:`internal/judge/runner.go` 当前是 stub,需要把 `isolate --init` / `--run` / `--meta` 全流程串起来,并在 K8s privileged 容器内验证。
 2. **4 语言运行器**:C / C++ / Java / Python 的编译&运行命令、内存/时间限制映射,需要补到 `judge/runner.go` 的 language profile。
-3. **A↔D 共享 schema 复核**:`services/api/.../message/JudgeTask.java` + `JudgeResult.java` 字段(尤其 `verdict` 枚举、`metrics` 子结构)必须 Day 2 之前由 A(submit / dispatcher 负责人)和 D(worker 负责人)联合 review。
+3. **@Phoen1xCode↔@Nier291 共享 schema 复核**:`services/api/.../message/JudgeTask.java` + `JudgeResult.java` 字段(尤其 `verdict` 枚举、`metrics` 子结构)必须 Day 2 之前由 @Phoen1xCode(worker 负责人)和 @Nier291(submit / dispatcher 负责人)联合 review。
 4. **Seata 真正接入**:目前 `submit-service`、`problem-service` 只锁了 Spring Cloud Alibaba 版本,AT 模式 / TCC 注解尚未落地;依赖 Nacos 注册和 `undo_log` 表,需要在 Sprint 1 结束前打通。
 5. **CODEOWNERS 替换占位**:`.github/CODEOWNERS` 内现是占位用户名,需 5 位组员加入仓库后替换。
 6. **Nacos 配置中心切换**:目前各服务 `application.yml` 是本地占位,需要把数据源 / Redis / RabbitMQ 配置抽到 Nacos `dataId`。
@@ -99,7 +99,7 @@ CI 工作流首次跑会在推到远端后自动验证(目前仓库无 git remot
 
 ## 影响接口?
 
-- [x] **影响共享 API**。`services/api/src/main/java/com/judgemesh/api/message/JudgeTask.java` 与 `JudgeResult.java` 是首次定义,作为 A(submit-service / judge-dispatcher)与 D(judge-worker)之间 RabbitMQ 通信的合同,**必须** Day 2 之前由两位 owner 联合复核字段命名、必填项、枚举值,再有人开始写 producer/consumer。
+- [x] **影响共享 API**。`services/api/src/main/java/com/judgemesh/api/message/JudgeTask.java` 与 `JudgeResult.java` 是首次定义,作为 @Phoen1xCode(judge-worker)与 @Nier291(submit-service / judge-dispatcher)之间 RabbitMQ 通信的合同,**必须** Day 2 之前由两位 owner 联合复核字段命名、必填项、枚举值,再有人开始写 producer/consumer。
 - [x] **影响共享 Feign client**。`services/api/src/main/java/com/judgemesh/api/client/{UserClient,ProblemClient}.java` 是其他服务调用 user / problem 的入口,后续 user-service / problem-service 的 Controller 路径必须与之保持一致。
 
 ## 部署影响

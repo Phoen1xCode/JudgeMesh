@@ -4,9 +4,9 @@
 
 | 库          | 路径                                                                         | 维护者 |
 | ----------- | ---------------------------------------------------------------------------- | ------ |
-| users_db    | `services/user-service/src/main/resources/db/migration/V*.sql`               | B      |
-| problems_db | `services/problem-service/src/main/resources/db/migration/V*.sql`            | C      |
-| submits_db  | `services/submit-service/src/main/resources/db/migration/V*.sql`             | D      |
+| users_db    | `services/user-service/src/main/resources/db/migration/V*.sql`               | @HashThiin      |
+| problems_db | `services/problem-service/src/main/resources/db/migration/V*.sql`            | @KY-raika      |
+| submits_db  | `services/submit-service/src/main/resources/db/migration/V*.sql`             | @Nier291      |
 
 ## 命名规范
 

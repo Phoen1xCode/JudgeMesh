@@ -59,10 +59,10 @@ docs/${person}-${desc}               # 仅文档
 
 1. PR 标题前缀加 `[api-change]`
 2. 在 PR 描述里 @ 所有依赖方(看 [docs/design/12-五人分工.md](docs/design/12-五人分工.md) 协作图)
-3. **A 守门审批**(组长最终决策)
+3. **@Phoen1xCode 守门审批**(组长最终决策)
 4. 各依赖方在 24h 内 pull 最新 API 并适配
 
-特别地,Worker ↔ Dispatcher 协议(`JudgeTask` / `JudgeResult`)由 A 与 D 共同维护,改动 PR 双签确认。
+特别地,Worker ↔ Dispatcher 协议(`JudgeTask` / `JudgeResult`)由 @Phoen1xCode 与 @Nier291 共同维护,改动 PR 双签确认。
 
 ## 紧急升级路径
 
