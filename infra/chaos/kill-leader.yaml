@@ -1,0 +1,14 @@
+# 实验 2:杀掉当前 dispatcher leader,验证 etcd 选主切换
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: kill-dispatcher-leader
+  namespace: chaos-mesh
+spec:
+  action: pod-kill
+  mode: one # TODO 配合 lease 注解精确选 leader
+  selector:
+    namespaces: [judgemesh]
+    labelSelectors:
+      app: judge-dispatcher
+  duration: "0s"

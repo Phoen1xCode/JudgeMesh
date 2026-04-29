@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: judge-worker
+  namespace: judgemesh
+  labels: { app: judge-worker }
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: judge-worker }
+  template:
+    metadata:
+      labels: { app: judge-worker }
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8090"
+    spec:
+      tolerations:
+        - { key: role, operator: Equal, value: judge, effect: NoSchedule }
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - { key: role, operator: In, values: [judge] }
+      containers:
+        - name: worker
+          image: docker.io/judgemesh/judge-worker:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { containerPort: 8090, name: http }
+          env:
+            - { name: WORKER_ID, valueFrom: { fieldRef: { fieldPath: metadata.name } } }
+            - { name: RABBITMQ_URL, value: amqp://guest:guest@rabbitmq.judgemesh-infra.svc:5672/ }
+            - { name: CALLBACK_BASE, value: http://submit-service.judgemesh.svc:8083 }
+          # ⚠️ isolate 需要较高权限;生产可换成 SYS_ADMIN 等细粒度 cap
+          securityContext:
+            privileged: true
+          resources:
+            requests: { cpu: 1000m, memory: 1Gi }
+            limits: { cpu: 2000m, memory: 2Gi }
+          readinessProbe:
+            httpGet: { path: /health, port: 8090 }
+            initialDelaySeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: judge-worker
+  namespace: judgemesh
+spec:
+  selector: { app: judge-worker }
+  ports:
+    - { port: 8090, targetPort: 8090, name: http }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: judge-worker-hpa
+  namespace: judgemesh
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: judge-worker
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: rabbitmq_queue_messages_ready
+          selector: { matchLabels: { queue: submit.queue } }
+        target: { type: AverageValue, averageValue: "5" }
+  behavior:
+    scaleDown: { stabilizationWindowSeconds: 300 }
+    scaleUp: { stabilizationWindowSeconds: 30 }

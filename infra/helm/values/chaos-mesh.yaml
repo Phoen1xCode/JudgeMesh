@@ -1,0 +1,10 @@
+# helm install chaos-mesh chaos-mesh/chaos-mesh -n chaos-mesh --create-namespace -f .
+chaosDaemon:
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+controllerManager:
+  replicaCount: 1
+dashboard:
+  create: true
+  serviceType: NodePort
+  securityMode: false # demo 期免登录;生产必须开

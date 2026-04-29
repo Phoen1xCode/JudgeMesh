@@ -1,0 +1,12 @@
+# helm install skywalking apache/skywalking -n judgemesh-observe -f .
+oap:
+  storageType: elasticsearch
+  envoy:
+    metricsServiceEnabled: false
+ui:
+  service:
+    type: NodePort
+elasticsearch:
+  enabled: true
+  minimumMasterNodes: 1
+  replicas: 1

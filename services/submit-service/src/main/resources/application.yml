@@ -1,0 +1,65 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: submit-service
+  config:
+    import:
+      - optional:nacos:submit-service.yaml
+      - optional:nacos:application.yaml
+  cloud:
+    nacos:
+      server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:judgemesh}
+      config:
+        namespace: ${NACOS_NAMESPACE:judgemesh}
+        file-extension: yaml
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:3306/submits_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC
+    username: ${MYSQL_USER:judgemesh}
+    password: ${MYSQL_PASSWORD:judgemesh}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+judgemesh:
+  mq:
+    submit-queue: submit.queue
+    submit-exchange: submit.exchange
+    submit-dlq: submit.dlq
+  leaderboard:
+    redis-key-prefix: leaderboard
+
+seata:
+  enabled: false
+  application-id: ${spring.application.name}
+  tx-service-group: judgemesh-tx-group
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

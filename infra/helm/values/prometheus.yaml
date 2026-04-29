@@ -1,0 +1,29 @@
+# kube-prometheus-stack values
+# helm install prom prometheus-community/kube-prometheus-stack \
+#   -n judgemesh-observe --create-namespace -f infra/helm/values/prometheus.yaml
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    retention: 7d
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+
+grafana:
+  enabled: true
+  adminPassword: changeme
+  defaultDashboardsEnabled: true
+  # 4 个 JudgeMesh 大盘从 ConfigMap 自动加载(Sprint 1)
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+
+alertmanager:
+  enabled: true
+  config:
+    receivers:
+      - name: webhook
+        # webhook_configs:
+        #   - url: https://oapi.dingtalk.com/robot/send?access_token=...

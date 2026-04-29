@@ -1,0 +1,15 @@
+# 实验 3:RabbitMQ 网络分区,验证提交链路降级 / 重试
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: rabbitmq-partition
+  namespace: chaos-mesh
+spec:
+  action: partition
+  mode: all
+  selector:
+    namespaces: [judgemesh-infra]
+    labelSelectors:
+      app: rabbitmq
+  direction: both
+  duration: "60s"
