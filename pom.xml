@@ -33,7 +33,7 @@
         <skywalking.version>9.4.0</skywalking.version>
 
         <!-- 插件 -->
-        <jib-maven-plugin.version>3.4.4</jib-maven-plugin.version>
+        <jib-maven-plugin.version>3.5.1</jib-maven-plugin.version>
         <docker.registry>docker.io/judgemesh</docker.registry>
     </properties>
 
