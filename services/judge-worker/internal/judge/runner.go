@@ -14,11 +14,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/judgemesh/judge-worker/internal/config"
+	"github.com/judgemesh/judge-worker/internal/metrics"
 )
 
 type Runner struct {
@@ -42,7 +44,10 @@ func (r *Runner) Run(ctx context.Context, t Task) {
 		"language", t.Language,
 		"cases", len(t.Testcases))
 
+	start := time.Now()
 	result := r.execute(ctx, t)
+	metrics.JudgeTasksTotal.WithLabelValues(result.Status).Inc()
+	metrics.JudgeDurationSeconds.Observe(time.Since(start).Seconds())
 	if err := r.postResult(ctx, t.CallbackURL, result); err != nil {
 		slog.Error("callback failed", "submitId", t.SubmitID, "err", err)
 	}
@@ -146,7 +151,6 @@ func (r *Runner) prepareExecutable(ctx context.Context, workDir string, t Task) 
 }
 
 func (r *Runner) runCase(ctx context.Context, workDir string, run runSpec, t Task, tc TestCase) CaseResult {
-	start := time.Now()
 	input, err := fetchBytes(ctx, r.client, tc.InputURL)
 	if err != nil {
 		return CaseResult{Name: tc.Name, Status: "SE", Stderr: "fetch input: " + err.Error()}
@@ -157,6 +161,35 @@ func (r *Runner) runCase(ctx context.Context, workDir string, run runSpec, t Tas
 	}
 
 	timeout := time.Duration(max(t.TimeLimitMs*2, 1000)) * time.Millisecond
+	stdout, stderr, elapsed, timedOut, err := r.runPrepared(ctx, workDir, run, t, input, timeout)
+	if timedOut {
+		return CaseResult{Name: tc.Name, Status: "TLE", TimeMs: elapsed, Stderr: "time limit exceeded"}
+	}
+	if err != nil {
+		stderrText := strings.TrimSpace(string(stderr))
+		if stderrText == "" {
+			stderrText = err.Error()
+		}
+		return CaseResult{Name: tc.Name, Status: "RE", TimeMs: elapsed, Stderr: stderrText}
+	}
+	if !sameOutput(stdout, expected) {
+		return CaseResult{Name: tc.Name, Status: "WA", TimeMs: elapsed, Stderr: "wrong answer"}
+	}
+	return CaseResult{Name: tc.Name, Status: "AC", TimeMs: elapsed, MemoryKb: 0}
+}
+
+func (r *Runner) runPrepared(ctx context.Context, workDir string, run runSpec, t Task, input []byte, timeout time.Duration) ([]byte, []byte, int, bool, error) {
+	if _, err := exec.LookPath("isolate"); err == nil {
+		return r.runIsolated(ctx, workDir, run, t, input, timeout)
+	}
+	if !r.cfg.AllowUnsandboxed {
+		return nil, []byte("isolate is required; set JUDGE_ALLOW_UNSANDBOXED=true only for local development"), 0, false, errors.New("sandbox unavailable")
+	}
+	return runLocal(ctx, workDir, run, input, timeout)
+}
+
+func runLocal(ctx context.Context, workDir string, run runSpec, input []byte, timeout time.Duration) ([]byte, []byte, int, bool, error) {
+	start := time.Now()
 	cmdCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(cmdCtx, run.Command, run.Args...)
@@ -165,18 +198,53 @@ func (r *Runner) runCase(ctx context.Context, workDir string, run runSpec, t Tas
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	err := cmd.Run()
+	elapsed := int(time.Since(start).Milliseconds())
+	return stdout.Bytes(), stderr.Bytes(), elapsed, errors.Is(cmdCtx.Err(), context.DeadlineExceeded), err
+}
+
+func (r *Runner) runIsolated(ctx context.Context, workDir string, run runSpec, t Task, input []byte, timeout time.Duration) ([]byte, []byte, int, bool, error) {
+	start := time.Now()
+	boxID := int(time.Now().UnixNano() % 1000000)
+	boxArg := "--box-id=" + strconv.Itoa(boxID)
+	baseArgs := append([]string{boxArg}, strings.Fields(r.cfg.IsolateExtraArgs)...)
+	if _, err := runCommand(ctx, workDir, 5*time.Second, "isolate", append(baseArgs, "--init")...); err != nil {
+		if r.cfg.AllowUnsandboxed {
+			return runLocal(ctx, workDir, run, input, timeout)
+		}
+		return nil, []byte("isolate init failed: " + err.Error()), 0, false, err
+	}
+	defer func() {
+		if _, err := runCommand(context.Background(), workDir, 5*time.Second, "isolate", append(baseArgs, "--cleanup")...); err != nil {
+			slog.Warn("isolate cleanup failed", "boxID", boxID, "err", err)
+		}
+	}()
+
+	command, args, err := sandboxCommand(workDir, run)
+	if err != nil {
+		return nil, []byte(err.Error()), 0, false, err
+	}
+	runArgs := append([]string{}, baseArgs...)
+	runArgs = append(runArgs,
+		"--time="+fmt.Sprintf("%.3f", timeout.Seconds()),
+		"--wall-time="+fmt.Sprintf("%.3f", timeout.Seconds()+1),
+		"--mem="+strconv.Itoa(max(t.MemoryLimitMb*1024, 65536)),
+		"--dir=/work="+workDir+":rw",
+		"--run",
+		"--",
+		command,
+	)
+	runArgs = append(runArgs, args...)
+	cmdCtx, cancel := context.WithTimeout(ctx, timeout+time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(cmdCtx, "isolate", runArgs...)
+	cmd.Stdin = bytes.NewReader(input)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	err = cmd.Run()
 	elapsed := int(time.Since(start).Milliseconds())
-	if errors.Is(cmdCtx.Err(), context.DeadlineExceeded) {
-		return CaseResult{Name: tc.Name, Status: "TLE", TimeMs: elapsed, Stderr: "time limit exceeded"}
-	}
-	if err != nil {
-		return CaseResult{Name: tc.Name, Status: "RE", TimeMs: elapsed, Stderr: strings.TrimSpace(stderr.String())}
-	}
-	if !sameOutput(stdout.Bytes(), expected) {
-		return CaseResult{Name: tc.Name, Status: "WA", TimeMs: elapsed, Stderr: "wrong answer"}
-	}
-	return CaseResult{Name: tc.Name, Status: "AC", TimeMs: elapsed, MemoryKb: 0}
+	return stdout.Bytes(), stderr.Bytes(), elapsed, errors.Is(cmdCtx.Err(), context.DeadlineExceeded), err
 }
 
 func (r *Runner) postResult(ctx context.Context, callbackURL string, result Result) error {
@@ -266,6 +334,43 @@ func sameOutput(out, ans []byte) bool {
 type runSpec struct {
 	Command string
 	Args    []string
+}
+
+func sandboxCommand(workDir string, run runSpec) (string, []string, error) {
+	command, err := sandboxPath(workDir, run.Command)
+	if err != nil {
+		return "", nil, err
+	}
+	args := make([]string, 0, len(run.Args))
+	for _, arg := range run.Args {
+		mapped, err := sandboxArg(workDir, arg)
+		if err != nil {
+			return "", nil, err
+		}
+		args = append(args, mapped)
+	}
+	return command, args, nil
+}
+
+func sandboxArg(workDir, value string) (string, error) {
+	if filepath.IsAbs(value) {
+		return sandboxPath(workDir, value)
+	}
+	return value, nil
+}
+
+func sandboxPath(workDir, value string) (string, error) {
+	if filepath.IsAbs(value) {
+		if rel, err := filepath.Rel(workDir, value); err == nil && rel != "." && !strings.HasPrefix(rel, "..") {
+			return "/work/" + filepath.ToSlash(rel), nil
+		}
+		return value, nil
+	}
+	path, err := exec.LookPath(value)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 func max(a, b int) int {

@@ -7,6 +7,8 @@ import (
 
 	"github.com/judgemesh/judge-worker/internal/config"
 	"github.com/judgemesh/judge-worker/internal/judge"
+	"github.com/judgemesh/judge-worker/internal/metrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
@@ -28,7 +30,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("GET /healthz", s.health)
-	mux.HandleFunc("GET /metrics", s.metrics) // TODO Sprint 1 接 prometheus client
+	mux.Handle("GET /metrics", promhttp.Handler())
 	mux.HandleFunc("POST /judge", s.judge)
 	return mux
 }
@@ -41,15 +43,10 @@ func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) metrics(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-	// TODO Sprint 1: 接入 prometheus/client_golang
-	_, _ = w.Write([]byte("# HELP judge_worker_up 1 if up\n# TYPE judge_worker_up gauge\njudge_worker_up 1\n"))
-}
-
 func (s *Server) judge(w http.ResponseWriter, r *http.Request) {
 	var task judge.Task
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		metrics.JudgeTasksTotal.WithLabelValues("BAD_REQUEST").Inc()
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "bad json: " + err.Error()})
 		return
 	}
