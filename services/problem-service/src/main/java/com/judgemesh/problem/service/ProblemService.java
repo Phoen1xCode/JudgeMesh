@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -18,9 +16,11 @@ import java.util.Locale;
 @Service
 public class ProblemService {
     private final ProblemStore store;
+    private final TestcaseObjectStorage objectStorage;
 
-    public ProblemService(ProblemStore store) {
+    public ProblemService(ProblemStore store, TestcaseObjectStorage objectStorage) {
         this.store = store;
+        this.objectStorage = objectStorage;
     }
 
     public List<ProblemDTO> list(String q, String tag, String difficulty, Boolean includeDraft, int page, int size) {
@@ -58,11 +58,17 @@ public class ProblemService {
                 .setterId(command.setterId() == null ? 1001L : command.setterId())
                 .published(Boolean.TRUE.equals(command.published()))
                 .tags(command.tags() == null ? List.of() : command.tags())
-                .testCases(command.testCases() == null ? List.of() : command.testCases().stream()
-                        .map(this::toCase)
-                        .toList())
+                .testCases(List.of())
                 .build();
-        return store.save(problem);
+        Problem saved = store.save(problem);
+        if (command.testCases() != null) {
+            Long problemId = saved.getId();
+            saved.setTestCases(command.testCases().stream()
+                    .map(tc -> toCase(problemId, tc))
+                    .toList());
+            saved = store.save(saved);
+        }
+        return saved;
     }
 
     public Problem update(Long id, CreateProblemCommand command) {
@@ -89,7 +95,7 @@ public class ProblemService {
             problem.setTags(command.tags());
         }
         if (command.testCases() != null) {
-            problem.setTestCases(command.testCases().stream().map(this::toCase).toList());
+            problem.setTestCases(command.testCases().stream().map(tc -> toCase(id, tc)).toList());
         }
         return store.save(problem);
     }
@@ -100,8 +106,8 @@ public class ProblemService {
                 .sorted(Comparator.comparing(TestCase::getCaseIndex))
                 .map(tc -> JudgeTask.TestCaseRef.builder()
                         .name("case-" + tc.getCaseIndex())
-                        .inputUrl(dataUrl(tc.getInput()))
-                        .expectedOutputUrl(dataUrl(tc.getExpectedOutput()))
+                        .inputUrl(objectStorage.readUrl(tc.getInput()))
+                        .expectedOutputUrl(objectStorage.readUrl(tc.getExpectedOutput()))
                         .build())
                 .toList();
     }
@@ -123,18 +129,13 @@ public class ProblemService {
                 .build();
     }
 
-    private TestCase toCase(TestCaseInput input) {
+    private TestCase toCase(Long problemId, TestCaseInput input) {
         return TestCase.builder()
                 .caseIndex(input.caseIndex())
-                .input(input.input())
-                .expectedOutput(input.expectedOutput())
+                .input(objectStorage.putText(problemId, input.caseIndex(), "in", input.input() == null ? "" : input.input()))
+                .expectedOutput(objectStorage.putText(problemId, input.caseIndex(), "ans", input.expectedOutput() == null ? "" : input.expectedOutput()))
                 .score(input.score() == null ? 10 : input.score())
                 .build();
-    }
-
-    private static String dataUrl(String value) {
-        String encoded = Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
-        return "data:text/plain;base64," + encoded;
     }
 
     private static String defaultString(String value, String fallback) {
