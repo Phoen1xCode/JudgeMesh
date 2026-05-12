@@ -19,7 +19,7 @@ func New(cfg config.Config, version string) *Server {
 	return &Server{
 		cfg:     cfg,
 		version: version,
-		runner:  judge.NewRunner(cfg),
+		runner:  judge.NewRunner(cfg, version),
 	}
 }
 
@@ -27,6 +27,7 @@ func New(cfg config.Config, version string) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.health)
+	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /metrics", s.metrics) // TODO Sprint 1 接 prometheus client
 	mux.HandleFunc("POST /judge", s.judge)
 	return mux

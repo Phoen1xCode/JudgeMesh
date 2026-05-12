@@ -8,11 +8,11 @@ type Config struct {
 	ListenAddr string
 	WorkerID   string
 
-	// Sprint 1 由 A 实装
 	RabbitMQURL    string
 	SubmitQueue    string
 	CallbackBase   string
 	IsolateBoxRoot string
+	WorkDir        string
 }
 
 func Load() Config {
@@ -23,6 +23,7 @@ func Load() Config {
 		SubmitQueue:    getenv("SUBMIT_QUEUE", "submit.queue"),
 		CallbackBase:   getenv("CALLBACK_BASE", "http://submit-service:8083"),
 		IsolateBoxRoot: getenv("ISOLATE_BOX_ROOT", "/var/local/lib/isolate"),
+		WorkDir:        getenv("JUDGE_WORK_DIR", ""),
 	}
 }
 

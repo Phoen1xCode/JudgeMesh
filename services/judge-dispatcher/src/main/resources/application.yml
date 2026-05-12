@@ -34,10 +34,13 @@ judgemesh:
     leader-key: /judgemesh/dispatcher/leader
     lease-ttl-seconds: 10
   worker:
+    urls: ${JUDGE_WORKER_URLS:http://127.0.0.1:8090}
     timeout-seconds: 30
     max-retry: 3
   mq:
     submit-queue: submit.queue
+  dispatcher:
+    listener-enabled: ${DISPATCHER_LISTENER_ENABLED:true}
 
 management:
   endpoints:
