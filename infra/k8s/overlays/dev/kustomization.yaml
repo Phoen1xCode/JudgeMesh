@@ -3,18 +3,48 @@ kind: Kustomization
 namespace: judgemesh
 
 resources:
+  - ../../base/gateway
+  - ../../base/user-service
+  - ../../base/problem-service
   - ../../base/submit-service
+  - ../../base/judge-dispatcher
   - ../../base/judge-worker
-  # TODO 加入 gateway / user-service / problem-service / judge-dispatcher
+  - ../../base/frontend
+  - ../../base/ingress
 
 # dev 环境差异:1 副本、资源减半、本地镜像
 patches:
+  - target: { kind: Deployment, name: gateway }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target: { kind: Deployment, name: user-service }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target: { kind: Deployment, name: problem-service }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
   - target: { kind: Deployment, name: submit-service }
     patch: |
       - op: replace
         path: /spec/replicas
         value: 1
+  - target: { kind: Deployment, name: judge-dispatcher }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
   - target: { kind: Deployment, name: judge-worker }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  - target: { kind: Deployment, name: frontend }
     patch: |
       - op: replace
         path: /spec/replicas

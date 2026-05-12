@@ -19,7 +19,7 @@ func Load() Config {
 	return Config{
 		ListenAddr:     getenv("LISTEN_ADDR", ":8090"),
 		WorkerID:       getenv("WORKER_ID", "worker-local"),
-		RabbitMQURL:    getenv("RABBITMQ_URL", "amqp://guest:guest@127.0.0.1:5672/"),
+		RabbitMQURL:    getenv("RABBITMQ_URL", "amqp://judgemesh:judgemesh@127.0.0.1:5672/"),
 		SubmitQueue:    getenv("SUBMIT_QUEUE", "submit.queue"),
 		CallbackBase:   getenv("CALLBACK_BASE", "http://submit-service:8083"),
 		IsolateBoxRoot: getenv("ISOLATE_BOX_ROOT", "/var/local/lib/isolate"),

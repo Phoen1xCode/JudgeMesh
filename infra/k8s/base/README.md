@@ -1,6 +1,6 @@
 # infra/k8s/base/ — 基础 manifest
 
-每个目录代表一个部署单元。`submit-service/` 与 `judge-worker/` 是**参考样板**,已可直接 apply;其余服务复制 `submit-service/deployment.yaml` 改名 + 端口即可。
+每个目录代表一个部署单元。当前 base 已包含 `frontend`、`gateway`、`user-service`、`problem-service`、`submit-service`、`judge-dispatcher`、`judge-worker` 与 `ingress`,可通过 overlays 一次性渲染。
 
 ## 业务服务对应端口
 

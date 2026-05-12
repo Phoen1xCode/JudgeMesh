@@ -7,3 +7,4 @@
 | `loadtest-submit.lua`     | wrk 压测脚本(提交链路)        | @sigufh + @Nier291  | TODO     |
 | `gen-jwt.sh`              | 调试用:生成测试 JWT          | @Phoen1xCode      | TODO     |
 | `port-forward.sh`         | 一键转发 Nacos / Grafana / SkyWalking 到本机 | @sigufh | TODO |
+| `smoke-test.sh`           | 健康检查、登录、题目列表和提交入队 | 全员 | READY |
