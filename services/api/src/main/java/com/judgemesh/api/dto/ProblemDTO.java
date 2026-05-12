@@ -19,6 +19,10 @@ public class ProblemDTO {
     private List<String> tags;
     private Integer timeLimitMs;
     private Integer memoryLimitMb;
+    private Long setterId;
+    private Boolean published;
+    private Integer totalSubmit;
+    private Integer totalAc;
     /** DRAFT / PUBLISHED / OFFLINE */
     private String status;
 }
