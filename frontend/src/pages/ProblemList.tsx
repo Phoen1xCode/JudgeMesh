@@ -14,8 +14,6 @@ export default function ProblemList() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoaded(false);
-    setError('');
     const timer = window.setTimeout(() => {
       fetchProblems({ q, difficulty: difficulty || undefined })
         .then(({ data }) => {
@@ -47,11 +45,26 @@ export default function ProblemList() {
         <div className="toolbar">
           <label className="field" style={{ minWidth: 260, flex: 1 }}>
             <span>Search</span>
-            <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="title, statement, keyword" />
+            <input
+              value={q}
+              onChange={(event) => {
+                setLoaded(false);
+                setError('');
+                setQ(event.target.value);
+              }}
+              placeholder="title, statement, keyword"
+            />
           </label>
           <label className="field" style={{ width: 180 }}>
             <span>Difficulty</span>
-            <select value={difficulty} onChange={(event) => setDifficulty(event.target.value)}>
+            <select
+              value={difficulty}
+              onChange={(event) => {
+                setLoaded(false);
+                setError('');
+                setDifficulty(event.target.value);
+              }}
+            >
               {difficulties.map((item) => (
                 <option key={item || 'ALL'} value={item}>
                   {item || 'ALL'}
@@ -63,7 +76,16 @@ export default function ProblemList() {
         {tags.length > 0 && (
           <div className="tag-row" style={{ marginTop: 12 }}>
             {tags.map((tag) => (
-              <button className="tag" key={tag} type="button" onClick={() => setQ(tag)}>
+              <button
+                className="tag"
+                key={tag}
+                type="button"
+                onClick={() => {
+                  setLoaded(false);
+                  setError('');
+                  setQ(tag);
+                }}
+              >
                 {tag}
               </button>
             ))}
