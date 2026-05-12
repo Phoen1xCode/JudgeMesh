@@ -34,7 +34,7 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_0900_ai_ci
-      - --default-authentication-plugin=caching_sha2_password
+  #过时参数    - --default-authentication-plugin=caching_sha2_password
     volumes:
       - mysql-data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d:ro
@@ -115,22 +115,22 @@ services:
       echo 'minio buckets ready';
       "
 
-  # ─── etcd 3.5(单节点) ──────────────────────────────────────
-  etcd:
-    image: bitnami/etcd:3.5
-    container_name: jm-etcd
-    restart: unless-stopped
-    networks: [judgemesh-net]
-    ports: ["2379:2379"]
-    environment:
-      ALLOW_NONE_AUTHENTICATION: "yes"
-      ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
-    volumes:
-      - etcd-data:/bitnami/etcd
-    healthcheck:
-      test: ["CMD", "etcdctl", "endpoint", "health"]
-      interval: 10s
-      retries: 10
+  # ─── etcd 3.5(单节点)(暂时用不到) ──────────────────────────────────────
+  #etcd:
+  #  image: bitnami/etcd:3.5
+  #  container_name: jm-etcd
+  #  restart: unless-stopped
+  #  networks: [judgemesh-net]
+  #  ports: ["2379:2379"]
+  #  environment:
+  #    ALLOW_NONE_AUTHENTICATION: "yes"
+  #    ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
+  #  volumes:
+  #    - etcd-data:/bitnami/etcd
+  #  healthcheck:
+  #    test: ["CMD", "etcdctl", "endpoint", "health"]
+  #    interval: 10s
+  #    retries: 10
 
   # ─── Nacos 3.x · 单机 standalone ─────────────────────────────
   # ⚠️ Nacos 3 的 derby 嵌入模式仅供本地;集群部署见 docs/design/08-部署架构.md
@@ -146,6 +146,9 @@ services:
       MODE: standalone
       PREFER_HOST_MODE: hostname
       NACOS_AUTH_ENABLE: "false"  # 本地省事;线上必开
+      NACOS_AUTH_IDENTITY_KEY: nacos
+      NACOS_AUTH_IDENTITY_VALUE: nacos
+      NACOS_AUTH_TOKEN: "VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg="  #随便写一个
       JVM_XMS: 256m
       JVM_XMX: 512m
     volumes:

@@ -21,6 +21,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.judgemesh.problem.config.MinioConfig;
+import com.judgemesh.problem.entity.TestcaseManifest;
+import com.judgemesh.problem.mapper.TestcaseManifestMapper;
+import com.judgemesh.problem.service.MinioService;
+import com.judgemesh.problem.vo.TestcaseManifestVO;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +35,11 @@ public class ProblemServiceImpl implements ProblemService {
     private final ProblemMapper problemMapper;
     private final ProblemTagMapper problemTagMapper;
     private final ProblemConverter problemConverter;
+
+    // Minio
+    private final MinioService minioService;
+    private final MinioConfig minioConfig;
+    private final TestcaseManifestMapper testcaseManifestMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class) // 保证主表和标签表同时成功或失败
@@ -145,5 +156,66 @@ public class ProblemServiceImpl implements ProblemService {
         Page<ProblemDTO> dtoPage = new Page<>(current, size, page.getTotal());
         dtoPage.setRecords(dtoList);
         return dtoPage;
+    }
+
+    // 处理上传
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void uploadTestcase(Long problemId, int caseIndex, MultipartFile inputFile, MultipartFile outputFile, Integer score) {
+        if (problemMapper.selectById(problemId) == null) {
+            throw new RuntimeException("题目不存在");
+        }
+
+        // 依据文档约定的路径规则: testcases/problem-{id}/{caseIdx}.in
+        String inputKey = String.format("problem-%d/%d.in", problemId, caseIndex);
+        String outputKey = String.format("problem-%d/%d.ans", problemId, caseIndex);
+        String bucket = minioConfig.getBuckets().getTestcases();
+
+        // 上传到 MinIO
+        minioService.uploadFile(bucket, inputKey, inputFile);
+        minioService.uploadFile(bucket, outputKey, outputFile);
+
+        // 记录入库 (MySQL)
+        TestcaseManifest manifest = testcaseManifestMapper.selectOne(
+            new LambdaQueryWrapper<TestcaseManifest>()
+                .eq(TestcaseManifest::getProblemId, problemId)
+                .eq(TestcaseManifest::getCaseIndex, caseIndex)
+        );
+
+        if (manifest == null) {
+            manifest = new TestcaseManifest();
+            manifest.setProblemId(problemId);
+            manifest.setCaseIndex(caseIndex);
+            manifest.setInputObject(inputKey);
+            manifest.setOutputObject(outputKey);
+            manifest.setScore(score != null ? score : 10);
+            testcaseManifestMapper.insert(manifest);
+        } else {
+            manifest.setInputObject(inputKey);
+            manifest.setOutputObject(outputKey);
+            if (score != null) manifest.setScore(score);
+            testcaseManifestMapper.updateById(manifest);
+        }
+    }
+
+    // 给 Worker 提供预签名链接清单
+    @Override
+    public List<TestcaseManifestVO> getTestcaseManifest(Long problemId) {
+        List<TestcaseManifest> list = testcaseManifestMapper.selectList(
+            new LambdaQueryWrapper<TestcaseManifest>()
+                .eq(TestcaseManifest::getProblemId, problemId)
+                .orderByAsc(TestcaseManifest::getCaseIndex)
+        );
+
+        String bucket = minioConfig.getBuckets().getTestcases();
+        return list.stream().map(m -> {
+            TestcaseManifestVO vo = new TestcaseManifestVO();
+            vo.setName(String.valueOf(m.getCaseIndex()));
+            vo.setScore(m.getScore());
+            // 预签名 URL，有效期 5 分钟 (04-数据模型)
+            vo.setInputUrl(minioService.getPresignedUrl(bucket, m.getInputObject(), 5));
+            vo.setExpectedOutputUrl(minioService.getPresignedUrl(bucket, m.getOutputObject(), 5));
+            return vo;
+        }).collect(Collectors.toList());
     }
 }
