@@ -30,12 +30,15 @@ spring:
 
 judgemesh:
   etcd:
+    enabled: ${ETCD_ENABLED:false}
+    fail-open: ${ETCD_FAIL_OPEN:true}
     endpoints: ${ETCD_ENDPOINTS:http://127.0.0.1:2379}
     leader-key: /judgemesh/dispatcher/leader
     lease-ttl-seconds: 10
   worker:
     urls: ${JUDGE_WORKER_URLS:http://127.0.0.1:8090}
     timeout-seconds: 30
+    blacklist-seconds: 30
     max-retry: 3
   mq:
     submit-queue: submit.queue

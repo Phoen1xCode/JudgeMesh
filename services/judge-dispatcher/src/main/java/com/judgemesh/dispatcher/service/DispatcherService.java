@@ -29,18 +29,23 @@ public class DispatcherService {
         if (!leaderElectionService.isLeader()) {
             return new DispatchResult(false, null, "not leader");
         }
-        URI worker = workerRegistry.acquire();
+        URI worker;
+        try {
+            worker = workerRegistry.acquire();
+        } catch (IllegalStateException ex) {
+            return new DispatchResult(false, null, ex.getMessage());
+        }
         try {
             markJudging(task, worker);
             URI endpoint = worker.resolve("/judge");
             ResponseEntity<String> response = restTemplate.postForEntity(endpoint, task, String.class);
             if (!response.getStatusCode().is2xxSuccessful()) {
-                reportSystemError(task, "worker rejected task: " + response.getStatusCode());
+                workerRegistry.markFailed(worker);
                 return new DispatchResult(false, worker.toString(), "worker rejected task");
             }
             return new DispatchResult(true, worker.toString(), "accepted");
         } catch (RestClientException ex) {
-            reportSystemError(task, ex.getMessage());
+            workerRegistry.markFailed(worker);
             return new DispatchResult(false, worker.toString(), ex.getMessage());
         } finally {
             workerRegistry.release(worker);
@@ -50,7 +55,7 @@ public class DispatcherService {
     public Map<String, Object> status() {
         return Map.of(
                 "leader", leaderElectionService.status(),
-                "workers", workerRegistry.inflightSnapshot());
+                "workers", workerRegistry.status());
     }
 
     private void markJudging(JudgeTask task, URI worker) {
