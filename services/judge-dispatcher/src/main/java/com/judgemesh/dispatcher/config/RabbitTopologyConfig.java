@@ -6,6 +6,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,7 +50,7 @@ public class RabbitTopologyConfig {
 
     @Bean
     Binding submitBinding(
-            Queue submitQueue,
+            @Qualifier("submitQueue") Queue submitQueue,
             DirectExchange judgeExchange,
             @Value("${judgemesh.mq.submit-routing-key:judge.task}") String routingKey) {
         return BindingBuilder.bind(submitQueue).to(judgeExchange).with(routingKey);
@@ -57,7 +58,7 @@ public class RabbitTopologyConfig {
 
     @Bean
     Binding submitRetryBinding(
-            Queue submitRetryQueue,
+            @Qualifier("submitRetryQueue") Queue submitRetryQueue,
             DirectExchange judgeExchange,
             @Value("${judgemesh.mq.retry-routing-key:judge.retry}") String routingKey) {
         return BindingBuilder.bind(submitRetryQueue).to(judgeExchange).with(routingKey);
@@ -65,7 +66,7 @@ public class RabbitTopologyConfig {
 
     @Bean
     Binding submitDeadBinding(
-            Queue submitDeadQueue,
+            @Qualifier("submitDeadQueue") Queue submitDeadQueue,
             DirectExchange judgeExchange,
             @Value("${judgemesh.mq.dead-routing-key:judge.dead}") String routingKey) {
         return BindingBuilder.bind(submitDeadQueue).to(judgeExchange).with(routingKey);
