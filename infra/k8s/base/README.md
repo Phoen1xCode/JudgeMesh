@@ -29,4 +29,4 @@
 | prometheus / grafana / alertmanager / skywalking / loki | helm(详见 ../helm/values/)  | judgemesh-observe |
 | chaos-mesh                                        | helm                               | chaos-mesh        |
 
-> Sprint 0 目标:把每个目录的 `deployment.yaml` / `statefulset.yaml` 占位先 push,Sprint 1 再细化资源 / 探针 / PVC。
+base 目录已包含业务 Deployment/Service、探针、资源配额、worker HPA 与 ingress;中间件安装参数在 `infra/helm/values/` 和 `infra/local/` 下维护。

@@ -29,7 +29,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 
-# Seata 客户端(B 在 Sprint 1 接入)
+# Seata is wired but disabled by default for local development.
 seata:
   enabled: false
   application-id: ${spring.application.name}

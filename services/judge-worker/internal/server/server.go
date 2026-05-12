@@ -52,7 +52,7 @@ func (s *Server) judge(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("judge accepted", "submitId", task.SubmitID, "lang", task.Language)
 
-	// 占位:同步返回 ACCEPTED;真正实现走异步 channel + worker pool + isolate
+	// Return ACCEPTED quickly; the runner completes asynchronously and posts the callback.
 	go s.runner.Run(r.Context(), task) // nolint:contextcheck
 
 	writeJSON(w, http.StatusAccepted, map[string]any{
