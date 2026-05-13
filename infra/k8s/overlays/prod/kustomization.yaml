@@ -3,6 +3,11 @@ kind: Kustomization
 namespace: judgemesh
 
 resources:
+  - ../../base/gateway
+  - ../../base/user-service
+  - ../../base/problem-service
   - ../../base/submit-service
+  - ../../base/judge-dispatcher
   - ../../base/judge-worker
-  # TODO 加入 gateway / user-service / problem-service / judge-dispatcher
+  - ../../base/frontend
+  - ../../base/ingress
