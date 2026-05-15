@@ -1,6 +1,7 @@
 package com.judgemesh.submit.service;
 
 import com.judgemesh.api.client.ProblemClient;
+import com.judgemesh.api.client.UserClient;
 import com.judgemesh.api.dto.ContestRankDTO;
 import com.judgemesh.api.dto.SubmissionDTO;
 import com.judgemesh.api.dto.SubmitCreateRequest;
@@ -19,9 +20,11 @@ import com.judgemesh.submit.websocket.ContestRankSocketHub;
 import com.judgemesh.submit.websocket.SubmissionSocketHub;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,14 +42,18 @@ public class SubmissionService {
     private final LeaderboardService leaderboardService;
     private final SubmitProperties properties;
     private final ObjectProvider<ProblemClient> problemClientProvider;
+    private final ObjectProvider<UserClient> userClientProvider;
     private final SubmissionSocketHub submissionSocketHub;
     private final ContestRankSocketHub contestRankSocketHub;
+    private final SubmitMetrics submitMetrics;
 
+    @GlobalTransactional(name = "submit-create", rollbackFor = Exception.class)
     public SubmissionDTO submit(long userId, SubmitCreateRequest request) {
         validateCodeLength(request.getCode());
         if (!dedupService.tryAcquire(userId, request.getProblemId())) {
             throw new DomainException(ErrorCode.SUBMIT_RATE_LIMITED);
         }
+        deductSubmitCostIfEnabled(userId);
 
         ContestRecord contest = null;
         if (request.getContestId() != null) {
@@ -68,6 +75,7 @@ public class SubmissionService {
         JudgeTask task = buildTask(record, request, problem);
         taskPublisher.publish(task);
         submissionSocketHub.broadcast(record.getId(), toDto(record));
+        submitMetrics.recordSubmission(record.getLanguage(), record.getStatus());
         if (contest != null && contestService.isContestFrozen(contest)) {
             contestRankSocketHub.broadcast(contest.getId(), contestService.contestRank(contest.getId()));
         }
@@ -99,6 +107,7 @@ public class SubmissionService {
 
         ContestRecord contest = record.getContestId() == null ? null : contestService.getContestRecord(record.getContestId());
         leaderboardService.recordResult(record, contest, status, record.getJudgedAt());
+        submitMetrics.recordJudgeResult(record.getLanguage(), status, judgeLatency(record));
         submissionSocketHub.broadcast(record.getId(), toDto(record));
         if (contest != null && !contestService.isContestFrozen(contest)) {
             ContestRankDTO rankDTO = contestService.contestRank(contest.getId());
@@ -139,6 +148,24 @@ public class SubmissionService {
                 .memoryLimitMb(256)
                 .testcaseManifestUrl(defaultTestcaseManifestUrl(problemId))
                 .build();
+    }
+
+    private void deductSubmitCostIfEnabled(long userId) {
+        if (!properties.getSubmission().isDeductScoreEnabled()) {
+            return;
+        }
+        UserClient userClient = userClientProvider.getIfAvailable();
+        if (userClient == null) {
+            throw new DomainException(ErrorCode.BAD_REQUEST, "user-service client is unavailable");
+        }
+        userClient.deductBalance(userId, properties.getSubmission().getSubmitCost());
+    }
+
+    private Duration judgeLatency(SubmissionRecord record) {
+        if (record.getSubmittedAt() == null || record.getJudgedAt() == null) {
+            return null;
+        }
+        return Duration.between(record.getSubmittedAt(), record.getJudgedAt());
     }
 
     private JudgeTask buildTask(SubmissionRecord record, SubmitCreateRequest request, ProblemDTO problem) {

@@ -47,6 +47,8 @@ judgemesh:
     contest-pub-sub-prefix: "pubsub:contest:"
   submission:
     callback-url: http://submit-service:8083/api/submit/internal/result
+    deduct-score-enabled: ${SUBMIT_DEDUCT_SCORE_ENABLED:false}
+    submit-cost: ${SUBMIT_COST:1}
   websocket:
     allowed-origins:
       - "*"

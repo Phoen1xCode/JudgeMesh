@@ -23,6 +23,8 @@ public class SubmitProperties {
     public static class Submission {
         private int codeLengthLimit = 65536;
         private String callbackUrl = "http://submit-service:8083/api/submit/internal/result";
+        private boolean deductScoreEnabled = false;
+        private int submitCost = 1;
     }
 
     @Data

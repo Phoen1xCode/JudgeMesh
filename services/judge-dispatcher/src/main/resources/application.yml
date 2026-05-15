@@ -39,12 +39,14 @@ judgemesh:
     worker:
       timeout-seconds: 30
       max-retry: 3
+      blacklist-seconds: 30
       endpoints:
         - http://judge-worker:8090
       health-path: /health
       judge-path: /judge
     mq:
       submit-queue: submit.queue
+      dead-letter-queue: submit.queue.dlq
 
 management:
   endpoints:

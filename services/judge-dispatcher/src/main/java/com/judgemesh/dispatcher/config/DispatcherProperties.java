@@ -27,6 +27,7 @@ public class DispatcherProperties {
     public static class Worker {
         private int timeoutSeconds = 30;
         private int maxRetry = 3;
+        private int blacklistSeconds = 30;
         private List<String> endpoints = List.of("http://judge-worker:8090");
         private String healthPath = "/health";
         private String judgePath = "/judge";
@@ -35,6 +36,7 @@ public class DispatcherProperties {
     @Data
     public static class Mq {
         private String submitQueue = "submit.queue";
+        private String deadLetterQueue = "submit.queue.dlq";
     }
 
     @Data

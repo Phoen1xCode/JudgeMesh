@@ -4,5 +4,6 @@ namespace: judgemesh
 
 resources:
   - ../../base/submit-service
+  - ../../base/judge-dispatcher
   - ../../base/judge-worker
-  # TODO 加入 gateway / user-service / problem-service / judge-dispatcher
+  # TODO add gateway / user-service / problem-service

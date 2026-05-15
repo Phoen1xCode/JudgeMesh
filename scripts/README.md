@@ -1,9 +1,21 @@
-# scripts/ — 运维与工具脚本
+# scripts
 
-| 脚本                      | 用途                          | 维护者 | 状态     |
-| ------------------------- | ----------------------------- | ------ | -------- |
-| `k8s-bootstrap.sh`        | kubeadm 集群一键初始化         | @sigufh      | TODO     |
-| `import-problems.py`      | 批量导入题目 + 用例到 MinIO    | @KY-raika      | TODO     |
-| `loadtest-submit.lua`     | wrk 压测脚本(提交链路)        | @sigufh + @Nier291  | TODO     |
-| `gen-jwt.sh`              | 调试用:生成测试 JWT          | @Phoen1xCode      | TODO     |
-| `port-forward.sh`         | 一键转发 Nacos / Grafana / SkyWalking 到本机 | @sigufh | TODO |
+| Script | Purpose | Owner | Status |
+| ------ | ------- | ----- | ------ |
+| `k8s-bootstrap.sh` | kubeadm cluster bootstrap | @sigufh | TODO |
+| `import-problems.py` | bulk import problems and testcases to MinIO | @KY-raika | TODO |
+| `loadtest-submit.lua` | wrk load test for submit-service submit path | @sigufh + @Nier291 | DONE |
+| `gen-jwt.sh` | generate test JWT for debugging | @Phoen1xCode | TODO |
+| `port-forward.sh` | port-forward Nacos / Grafana / SkyWalking locally | @sigufh | TODO |
+
+Run submit load test:
+
+```bash
+wrk -t4 -c50 -d5m -s scripts/loadtest-submit.lua http://127.0.0.1:8083
+```
+
+Optional variables:
+
+```bash
+USER_ID=1001 PROBLEM_ID=1 LANGUAGE=cpp wrk -t4 -c50 -d5m -s scripts/loadtest-submit.lua http://127.0.0.1:8083
+```

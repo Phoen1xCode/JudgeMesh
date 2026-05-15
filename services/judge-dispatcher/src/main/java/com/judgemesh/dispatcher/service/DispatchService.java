@@ -27,6 +27,7 @@ public class DispatchService {
     private final WorkerSelectionService workerSelectionService;
     private final RestTemplateBuilder restTemplateBuilder;
     private final ScheduledExecutorService scheduler;
+    private final DispatcherMetrics dispatcherMetrics;
 
     private volatile Instant lastDispatchAt;
 
@@ -53,6 +54,7 @@ public class DispatchService {
             lastDispatchAt = Instant.now();
             scheduler.schedule(() -> workerSelectionService.noteReleased(workerUrl),
                     properties.getWorker().getTimeoutSeconds(), TimeUnit.SECONDS);
+            dispatcherMetrics.recordDispatch(workerUrl, "success");
             return DispatchReceipt.builder()
                     .submissionId(task.getSubmitId())
                     .workerUrl(workerUrl)
@@ -62,6 +64,8 @@ public class DispatchService {
                     .build();
         } catch (RuntimeException ex) {
             workerSelectionService.noteReleased(workerUrl);
+            workerSelectionService.noteFailed(workerUrl);
+            dispatcherMetrics.recordDispatch(workerUrl, "failure");
             throw ex;
         }
     }
@@ -75,6 +79,7 @@ public class DispatchService {
                 .lastDispatchAt(lastDispatchAt)
                 .workers(workers)
                 .inflight(workerSelectionService.snapshotInflight())
+                .blacklistedWorkers(workerSelectionService.snapshotBlacklist())
                 .build();
     }
 

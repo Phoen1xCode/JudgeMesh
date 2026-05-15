@@ -20,4 +20,5 @@ public class DispatcherStatusDTO {
     private Instant lastDispatchAt;
     private List<String> workers;
     private Map<String, Integer> inflight;
+    private Map<String, Instant> blacklistedWorkers;
 }

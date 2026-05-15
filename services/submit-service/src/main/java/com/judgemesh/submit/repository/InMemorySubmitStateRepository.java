@@ -2,7 +2,9 @@ package com.judgemesh.submit.repository;
 
 import com.judgemesh.submit.model.ContestRecord;
 import com.judgemesh.submit.model.SubmissionRecord;
-import org.springframework.context.annotation.Primary;
+import com.judgemesh.api.enumx.SubmitStatus;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -16,7 +18,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
-@Primary
+@ConditionalOnMissingBean(JdbcTemplate.class)
 public class InMemorySubmitStateRepository implements SubmitStateRepository {
 
     private final AtomicLong submissionSeq = new AtomicLong(1_000_000L);
@@ -45,6 +47,13 @@ public class InMemorySubmitStateRepository implements SubmitStateRepository {
                 .sorted(Comparator.comparing(SubmissionRecord::getSubmittedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                         .reversed())
                 .toList();
+    }
+
+    @Override
+    public long countSubmissionsByStatus(SubmitStatus status) {
+        return submissions.values().stream()
+                .filter(submission -> submission.getStatus() == status)
+                .count();
     }
 
     @Override
