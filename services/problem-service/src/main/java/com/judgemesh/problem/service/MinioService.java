@@ -24,11 +24,17 @@ public class MinioService {
      */
     public String uploadFile(String bucketName, String objectName, MultipartFile file) {
         try (InputStream inputStream = file.getInputStream()) {
+            // 兜底：如果获取不到 ContentType，默认用二进制流
+            String contentType = file.getContentType();
+            if (contentType == null || contentType.isEmpty()) {
+                contentType = "application/octet-stream";
+            }
+
             minioClient.putObject(PutObjectArgs.builder()
                 .bucket(bucketName)
                 .object(objectName)
                 .stream(inputStream, file.getSize(), -1)
-                .contentType(file.getContentType())
+                .contentType(contentType) // 使用兜底后的 contentType
                 .build());
             return objectName;
         } catch (Exception e) {
