@@ -33,6 +33,22 @@ public class ProblemController {
         return ApiResponse.ok(problemService.listProblems(current, size, keyword, tag, difficulty));
     }
 
+    // Backward-compatible endpoint used by the frontend and load-test scripts.
+    @GetMapping(path = "/list")
+    public ApiResponse<List<ProblemDTO>> listProblemsCompat(
+        @RequestParam(value = "current", defaultValue = "1") int current,
+        @RequestParam(value = "size", defaultValue = "10") int size,
+        @RequestParam(value = "q", required = false) String keyword,
+        @RequestParam(value = "keyword", required = false) String keywordCompat,
+        @RequestParam(value = "tag", required = false) String tag,
+        @RequestParam(value = "difficulty", required = false) String difficulty,
+        @RequestParam(value = "includeDraft", required = false) Boolean includeDraft) {
+
+        String effectiveKeyword = keyword != null ? keyword : keywordCompat;
+        Page<ProblemDTO> page = problemService.listProblems(current, size, effectiveKeyword, tag, difficulty);
+        return ApiResponse.ok(page.getRecords());
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<ProblemDTO> getProblem(@PathVariable("id") Long id) {
         ProblemDTO dto = problemService.getProblemDetail(id);
