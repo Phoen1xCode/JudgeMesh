@@ -1,99 +1,71 @@
 # JudgeMesh
 
-JudgeMesh 是一个面向课程大作业的分布式在线判题系统。实现范围来自 `docs/design/`:
+JudgeMesh 是一个面向课程实践与答辩展示的分布式在线判题系统。系统以 Online Judge 业务为载体，覆盖用户认证、题目管理、代码提交、异步判题、比赛排行榜、可观测性和故障恢复等场景，用于展示高并发、高性能、高可用的分布式系统设计与实现。
 
-- Spring Cloud Gateway 统一入口,负责 JWT 校验、路由和用户 Header 透传
-- `user-service` 支持注册、登录、JWT、RBAC 档案和余额扣减演示接口
-- `problem-service` 支持题目列表、详情、创建/编辑和测试用例 manifest
-- `submit-service` 支持提交、状态机、比赛报名、排行榜和 WebSocket 推送
-- `judge-dispatcher` 消费提交任务并派发到 worker
-- `judge-worker` 支持 C/C++/Java/Python 编译运行、输出比对和回写
-- React 前端提供题目、提交、比赛、排行和账户工作台
-- 前端支持提交结果、比赛榜单、全局榜单的实时 WebSocket 推送
-- K8s manifests 覆盖 frontend、gateway、4 个业务服务、dispatcher、worker 和 Ingress
+## 项目概览
 
-## 5 分钟本地启动
+系统采用前后端分离与微服务架构：
 
-先启动本地中间件:
+- 前端使用 React，提供题目、提交、比赛、排行榜和账户工作台。
+- 后端使用 Spring Cloud Gateway 作为统一入口，负责 JWT 校验、路由和限流。
+- `user-service` 负责用户注册登录、RBAC 权限和账户信息。
+- `problem-service` 负责题目、标签、测试用例 manifest 和对象存储元数据。
+- `submit-service` 负责提交记录、判题状态机、比赛报名、排行榜和 WebSocket 推送。
+- `judge-dispatcher` 负责消费 RabbitMQ 判题任务、选择 worker、处理超时重试和故障节点黑名单。
+- `judge-worker` 负责 C/C++/Java/Python 代码编译运行、输出比对和判题结果回写。
+- Redis 支撑排行榜与热点读缓存，MySQL 保存核心业务数据，MinIO 保存测试用例文件。
+- etcd 用于 dispatcher 选主，Prometheus、Grafana、SkyWalking、Loki 用于可观测性建设。
 
-```bash
-cp infra/local/.env.example infra/local/.env
-docker compose -f infra/local/docker-compose.yml --env-file infra/local/.env up -d
-```
+## 核心能力
 
-分别启动后端服务:
+- 多角色使用：游客、学生、出题人、管理员。
+- 题目管理：题目创建、编辑、发布、标签维护和测试用例上传。
+- 异步判题：提交先落库并进入消息队列，判题任务由 dispatcher 派发到 worker 池。
+- 多语言执行：支持 C、C++、Java、Python 的编译运行与结果判定。
+- 判题状态：覆盖 AC、WA、TLE、MLE、RE、CE、SE 等常见结果。
+- 比赛与排行：支持比赛报名、实时排行榜、封榜和全局榜单。
+- 分布式特性：RabbitMQ 削峰填谷、worker 池负载分担、etcd leader 选主、故障 worker 自动跳过与任务重派。
+- 可观测性：通过指标、链路追踪、日志和 Grafana 大盘观察 QPS、延迟、AC 率和 worker 水位。
 
-```bash
-mvn -pl services/api install -DskipTests
-mvn -pl services/user-service spring-boot:run
-mvn -pl services/problem-service spring-boot:run
-SUBMIT_CALLBACK_URL=http://127.0.0.1:8083/api/submit/internal/result mvn -pl services/submit-service spring-boot:run
-mvn -pl services/judge-dispatcher spring-boot:run
-mvn -pl services/gateway spring-boot:run
-```
+## 仓库结构
 
-启动 worker:
+| 路径           | 说明                                                           |
+| -------------- | -------------------------------------------------------------- |
+| `frontend/`    | React 前端应用                                                 |
+| `services/`    | Gateway、用户、题目、提交、调度器和 worker 等服务              |
+| `infra/`       | Kubernetes、Helm、本地中间件和基础设施配置                     |
+| `migrations/`  | 数据库迁移脚本                                                 |
+| `scripts/`     | 数据导入、演示、压测和文档生成脚本                             |
+| `tests/`       | 测试资源与测试脚本                                             |
+| `docs/design/` | 需求、架构、服务拆分、数据模型、判题流水线、测试策略等设计文档 |
+| `docs/dev/`    | 本地联调、云部署、测试数据和接口对接文档                       |
+| `submit/`      | 课程提交与答辩相关材料                                         |
 
-```bash
-cd services/judge-worker
-LISTEN_ADDR=:8090 go run ./cmd/worker
-```
+## 交付文档
 
-启动前端:
+项目根目录下放置了最终提交用 PDF：
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+| 文档           | 位置                                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| 软件需求说明书 | [JudgeMesh 分布式在线判题系统-软件需求说明书.pdf](JudgeMesh%20分布式在线判题系统-软件需求说明书.pdf) |
+| 概要设计说明书 | [JudgeMesh 分布式在线判题系统-概要设计说明书.pdf](JudgeMesh%20分布式在线判题系统-概要设计说明书.pdf) |
+| 测试分析报告   | [JudgeMesh 分布式在线判题系统-测试分析报告.pdf](JudgeMesh%20分布式在线判题系统-测试分析报告.pdf)     |
+| 汇报 PPT       | [JudgeMesh 分布式在线判题系统-汇报PPT.pdf](JudgeMesh%20分布式在线判题系统-汇报PPT.pdf)               |
 
-默认前端地址是 `http://localhost:5173`,网关地址是 `http://localhost:8080`。种子账号:
+`docs/` 目录下同时保留了可编辑版本和导出版本：
 
-| 角色 | 邮箱 | 密码 |
-| --- | --- | --- |
-| Student | `student@judgemesh.local` | `Student@12345` |
-| Setter | `setter@judgemesh.local` | `Setter@12345` |
-| Admin | `admin@judgemesh.local` | `Admin@12345` |
+| 文档           | DOCX                                                 | PDF                                                |
+| -------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| 软件需求说明书 | [docs/软件需求说明书.docx](docs/软件需求说明书.docx) | [docs/软件需求说明书.pdf](docs/软件需求说明书.pdf) |
+| 概要设计说明书 | [docs/概要设计说明书.docx](docs/概要设计说明书.docx) | [docs/概要设计说明书.pdf](docs/概要设计说明书.pdf) |
+| 测试分析报告   | [docs/测试分析报告.docx](docs/测试分析报告.docx)     | [docs/测试分析报告.pdf](docs/测试分析报告.pdf)     |
 
-生成演示数据:
+## 测试结论摘要
 
-```bash
-python3 scripts/import-problems.py --service http://localhost:8080 --limit 30
-node scripts/seed-demo-data.mjs
-```
+最终测试报告基于项目测试策略、测试数据文档和汇报 PPT 中的测试结果整理。核心结果包括：
 
-## 验证
-
-```bash
-mvn test
-cd services/judge-worker && GOCACHE=/private/tmp/judgemesh-go-cache go test ./...
-cd frontend && npm run build
-BASE_URL=http://localhost:8080 scripts/smoke-test.sh
-```
-
-`scripts/smoke-test.sh` 会检查网关健康、公开题目列表、登录和一次提交入队。
-
-## 部署
-
-渲染 dev overlay:
-
-```bash
-kubectl kustomize infra/k8s/overlays/dev
-```
-
-应用到集群:
-
-```bash
-kubectl create namespace judgemesh || true
-kubectl create secret generic judgemesh-secrets \
-  --from-literal=MYSQL_USER=judgemesh \
-  --from-literal=MYSQL_PASSWORD=judgemesh \
-  --from-literal=RABBITMQ_USER=judgemesh \
-  --from-literal=RABBITMQ_PASSWORD=judgemesh \
-  --from-literal=JWT_SECRET=local-dev-secret-change-me-32-bytes \
-  -n judgemesh
-kubectl apply -k infra/k8s/overlays/dev
-```
-
-设计文档入口见 [docs/design/README.md](docs/design/README.md)。
-4 台服务器集群部署见 [submit/四节点服务器集群部署指南.md](submit/四节点服务器集群部署指南.md)。
+- 提交接口同步阶段 P99 为 156 ms，满足 P99 < 200 ms 目标。
+- 分布式端到端判题 P99 为 6418 ms，满足 P99 < 8 s 目标。
+- 单 worker 故障恢复场景 P99 为 6895 ms，30 次请求全部 AC。
+- 排行榜查询 P99 为 43 ms，题目详情查询 P99 为 87 ms。
+- 关键压测与演示场景错误率为 0%，验证了 RabbitMQ 异步削峰、worker 负载分担、Redis 缓存和故障重分发方案的有效性。
